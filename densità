@@ -1,0 +1,140 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+#prendo i codici e per non fare casino con le variabili aggiungo AL_ prima della variabili dell'allumino, AC_  acciaio, OT_ ottone
+def line(x, m, q):
+    return m * x + q
+
+#ALLUMINIO
+#cilindri
+AL_mc = np.array([1.447, 5.845, 15.662])#massa cilindri
+AL_hc = np.array([19.29, 19.28, 18.77])#altezza cilindri
+AL_dc = np.array([5.19, 11.95, 19.82])#diametro cilindri
+AL_sigma_mc = np.full(AL_mc.shape, 0.001)
+AL_sigma_hc = np.full(AL_hc.shape, 0.01)
+AL_sigma_dc = np.full(AL_dc.shape, 0.01)
+AL_Vc=AL_hc*((AL_dc/2)**2)*np.pi#volume cilindri
+#incertezza volume cilindri
+AL_sigma_Vc = AL_Vc * np.sqrt((AL_sigma_hc**2)/(AL_hc**2) + (2**2)*((AL_sigma_dc/2)**2)/((AL_dc/2)**2)) #non so se usare 2**2 o 2 e basta
+#parallelepipedi
+AL_mp = np.array([4.821, 7.915])#massa parallelepipedi
+AL_l1p = np.array([17.83, 20.08])#l1
+AL_l2p = np.array([10.06, 18.11])#l2
+AL_l3p = np.array([10.10, 8.13])#l3
+AL_sigma_mp = np.full(AL_mp.shape, 0.001)
+AL_sigma_l1p = np.full(AL_l1p.shape, 0.01)
+AL_sigma_l2p = np.full(AL_l2p.shape, 0.01)
+AL_sigma_l3p = np.full(AL_l3p.shape, 0.01)
+AL_Vp=AL_l1p*AL_l2p*AL_l3p#volume parallelepipedo
+#incertezza volume parallelepipedi
+AL_sigma_Vp = AL_Vp * np.sqrt((AL_sigma_l1p**2)/(AL_l1p**2) + (AL_sigma_l2p**2)/(AL_l2p**2) + (AL_sigma_l3p**2)/(AL_l3p**2))
+AL_V = np.append(AL_Vc, AL_Vp)
+AL_m = np.append(AL_mc, AL_mp)
+AL_sigma_V = np.append(AL_sigma_Vc, AL_sigma_Vp)
+AL_sigma_m = np.append(AL_sigma_mc, AL_sigma_mp)
+# Adattamento del modello ai dati
+AL_popt, AL_pcov = curve_fit(line, AL_m, AL_V)
+AL_m_hat, AL_q_hat = AL_popt
+AL_sigma_m_hat, AL_sigma_q_hat = np.sqrt(np.diag(AL_pcov))
+
+
+# OTTONE
+OT_Mc = np.array([10.465, 29.437]) #massa cilindri
+OT_Mp = np.array([4.693, 34.787])#massa parallelepipedi
+OT_Me = np.array([28.932])#massa prisma esagonale
+OT_Hc = np.array([16.00, 125.30])# Altezza cilindro
+OT_Dc = np.array([10.00, 6.05])# Diametro cilindro
+OT_sigma_Hc = np.full(OT_Hc.shape, 0.05)
+OT_sigma_Dc = np.full(OT_Dc.shape, 0.05)
+OT_Vc = (OT_Dc / 2.0)**2.0 * np.pi * OT_Hc#volume cilindro
+OT_sigma_Vc = OT_Vc * np.sqrt(((4.0 * OT_sigma_Dc**2.0) / (OT_Dc**2.0)) + ((OT_sigma_Hc**2.0) / (OT_Hc**2.0)))
+# Dimensioni parallelepipedo
+OT_L1 = np.array([22.60, 41.60])
+OT_L2 = np.array([5.60, 10.00])
+OT_L3 = np.array([5.00, 10.00])
+# Incertezza - precisione
+OT_sigma_L1 = np.full(OT_L1.shape, 0.05)
+OT_sigma_L2 = np.full(OT_L2.shape, 0.05)
+OT_sigma_L3 = np.full(OT_L3.shape, 0.05)
+OT_Vp = OT_L1 * OT_L2 * OT_L3# Volume parallelepipedo
+OT_sigma_Vp = OT_Vp * np.sqrt((OT_sigma_L1 / OT_L1)**2 + (OT_sigma_L2 / OT_L2)**2 + (OT_sigma_L3 / OT_L3)**2)
+# Dimensioni prisma esagonale
+# Apotema per due
+OT_A2 = np.array([14.94])
+# Altezza
+OT_He = np.array([17.79])
+# Incertezze
+OT_sigma_A2 = np.full(OT_A2.shape, 0.001)
+OT_sigma_He = np.full(OT_He.shape, 0.001)
+# Volume prisma
+OT_Ve = OT_He * (OT_A2 / 2) * (OT_A2 / 2) * (2 / np.sqrt(3)) * 3
+OT_sigma_Ve = OT_Ve * np.sqrt((2 * OT_sigma_A2 / OT_A2)**2 + (OT_sigma_He /OT_He)**2)
+# Dati di esempio
+OT_V = np.append(OT_Vc, OT_Vp)
+OT_V = np.append(OT_V, OT_Ve)
+OT_m = np.append(OT_Mc, OT_Mp)
+OT_m = np.append(OT_m, OT_Me)
+OT_sigma_V = np.append(OT_sigma_Vc, OT_sigma_Vp)
+OT_sigma_V = np.append(OT_sigma_V, OT_sigma_Ve)
+OT_sigma_m = np.full(OT_m.shape, 0.001)
+# Adattamento del modello ai dati
+OT_popt, OT_pcov = curve_fit(line, OT_m, OT_V)
+OT_m_hat, OT_q_hat = OT_popt
+OT_sigma_m_hat, OT_sigma_q_hat = np.sqrt(np.diag(OT_pcov))
+
+
+
+#ACCIAIO
+AC_m = np.array([2.085, 8.362, 18.906, 24.840, 44.795])
+AC_sigma_m = np.full(AC_m.shape, 0.001)
+AC_d = np.array([7.98, 12.69, 16.66, 18.25, 22.21])
+AC_sigma_d = np.full(AC_d.shape, 0.01)
+# Calcolo d el volume (notate la propagazione dell’errore su V!)
+AC_r = AC_d / 2.0
+AC_sigma_r = AC_sigma_d / 2.0
+AC_V = 4.0 / 3.0 * np.pi * AC_r**3.0
+AC_sigma_V = AC_V * 3.0 * AC_sigma_d / AC_d
+# Adattamento del modello ai dati
+AC_popt, AC_pcov = curve_fit(line, AC_m, AC_V)
+AC_m_hat, AC_q_hat = AC_popt
+AC_sigma_m_hat, AC_sigma_q_hat = np.sqrt(np.diag(AC_pcov))
+
+
+
+x = np.linspace(0.0, 50.0, 100)
+fig = plt.figure('grafico massa volume acciaio, alluminio e ottone + grafico dei residui')
+ax1, ax2 = fig.subplots(2, 1, sharex=True, gridspec_kw=dict(height_ratios=[2, 1], hspace=0.05))
+# Grafico del modello del best fit
+ax1.errorbar(AL_m, AL_V, AL_sigma_V, AL_sigma_m, fmt='o', label='ALLUMINIO', c="blue")
+ax1.errorbar(OT_m, OT_V, OT_sigma_V, OT_sigma_m, fmt='o', label='OTTONE', c="red")
+ax1.errorbar(AC_m, AC_V, AC_sigma_V, AC_sigma_m, fmt='o', label='ACCIAIO', c="green")
+ax1.plot(x, line(x, *AL_popt), c="blue")
+ax1.plot(x, line(x, *OT_popt), c="red")
+ax1.plot(x, line(x, *AC_popt), c="green")
+ax1.set_ylabel('Volume [mm$^3$]')
+ax1.grid(color='lightgray', ls='dashed')
+ax1.legend()
+# Grafico dei residui
+AL_res = AL_V - line(AL_m, AL_m_hat, AL_q_hat)
+OT_res = OT_V - line(OT_m, OT_m_hat, OT_q_hat)
+AC_res = AC_V - line(AC_m, AC_m_hat, AC_q_hat)
+ax2.errorbar(AL_m, AL_res, yerr=AL_sigma_V, fmt='o', c="blue")
+ax2.errorbar(OT_m, OT_res, yerr=OT_sigma_V, fmt='o', c="red")
+ax2.errorbar(AC_m, AC_res, yerr=AC_sigma_V, fmt='o', c="green")
+ax2.plot(x, np.full(x.shape, 0.0), c="black")
+ax2.set_xlabel('Massa [g]')
+ax2.set_ylabel('Residui')
+ax2.grid(color='lightgray', ls='dashed')
+print("alluminio")
+print(AL_m)
+print(AL_V)
+print(AL_sigma_V)
+print("ottone")
+print(OT_m)
+print(OT_V)
+print(OT_sigma_V)
+print("acciaio")
+print(AC_m)
+print(AC_V)
+print(AC_sigma_V)
+plt.show()
