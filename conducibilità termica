@@ -1,0 +1,132 @@
+import numpy as np
+from matplotlib import pyplot as plt
+from scipy.optimize import curve_fit
+
+#trasforma i numeri in un file in un array
+#data = np.loadtxt(r"C:\Users\polie\OneDrive\Desktop\UNI\lab 1\python\conducibilità\misure conducibilità.txt")#ricoda di mettre sono numeri senza nient'altro , r è un prefisso chiamato “raw string literal” o “stringa letterale cruda” e serve per leggere la stinga come tale e non sostituire i caratteri speciali come \
+#print(data)
+
+V = 10.3
+sigma_V = 0.1
+I = 1.67
+sigma_I = 0.01
+W = V * I / 2 #ho diviso per 2 perchè erano attaccate 2 resistenze nelle 2 barre di rame e alluminio in parallelo
+sigma_W = W * np.sqrt(sigma_I**2/I**2 + sigma_V**2/V**2)
+print(f"potenza: {W} +/- {sigma_W} watt")
+print("")
+#ALLUMINIO (non ho messi punti prefissi perchè non ho voglia)
+print("dati relativi all'alluminio:")
+#le lunghezze sono in m
+diametro = 0.02510 #
+sigma_diametro = 0.00005
+raggio = diametro / 2
+sigma_raggio = sigma_diametro / 2
+#sezione
+S =  np.pi * (raggio)**2
+sigma_S = S * 2 * (sigma_raggio/raggio)
+print(f"sezione: {S} +/- {sigma_S} m")
+
+T_blu = np.array([47.1, 45.5, 44.3, 42.1, 40.8, 38.6, 36.9, 35.1, 34.1, 32.5, 31.0, 29.8, 28.6, 26.7, 25.4])
+T_rosso = np.array([46.7, 45.2, 44.2, 42.4, 40.6, 38.7, 36.1, 35.4, 34.1, 32.4, 31.0, 29.9, 28.6, 27.1, 25.7])
+sigma_T_blu = np.full(T_blu.shape, 0.3)
+sigma_T_rosso = np.full(T_rosso.shape, 0.3)
+x = np.linspace(0.0, 34.5, len(T_rosso))
+sigma_x = np.full(x.shape, 0.1)
+def line(x, m, q): #modello fit lineare
+    return m * x + q
+# Fit con una retta
+popt_rosso, pcov_rosso = curve_fit(line, x, T_rosso, sigma=sigma_T_rosso)
+popt_blu, pcov_blu = curve_fit(line, x, T_blu, sigma=sigma_T_blu)
+m_hat_rosso, q_hat_rosso = popt_rosso
+m_hat_blu, q_hat_blu = popt_blu
+sigma_m_rosso, sigma_q_blu= np.sqrt(pcov_rosso.diagonal())
+sigma_m_blu, sigma_q_blu = np.sqrt(pcov_blu.diagonal())
+# Grafico del modello di best fit.
+fig = plt.figure('grafico posizione-temperatura barra alluminio e rame + residui')
+ax1, ax2 = fig.subplots(2, 1, sharex=True, gridspec_kw=dict(height_ratios=[2, 1], hspace=0.05))
+ax1.errorbar(x, T_rosso, sigma_T_rosso, sigma_x, fmt='o', c="dimgrey",label='alluminio, termistore 1')
+ax1.errorbar(x, T_blu, sigma_T_blu, sigma_x, fmt='o', c="darkgray", label='alluminio, termistore 2')
+ax1.legend()
+z = np.linspace(0., 40., 100)
+ax1.plot(z, line(z, m_hat_rosso, q_hat_rosso), c="dimgray")
+ax1.plot(z, line(z, m_hat_blu, q_hat_blu), c="darkgray")
+ax1.set_ylabel('Temperatura [$^\\circ$C]')
+ax1.grid(which='both', ls='dashed', color='black')
+ax2.grid(which='both', ls='dashed', color='black')
+ax2.set_xlabel('Posizione [cm]')
+res_rosso = T_rosso - line(x, m_hat_rosso, q_hat_rosso)
+res_blu  = T_blu - line(x, m_hat_blu, q_hat_blu)
+ax2.plot(z, np.full(z.shape, 0.0), c="black")
+ax2.errorbar(x, res_rosso, yerr=sigma_T_rosso, fmt='o', c="dimgray")
+ax2.errorbar(x, res_blu, yerr=sigma_T_blu, fmt='o', c="darkgray")
+ax2.set_ylabel("residui")
+# A questo punto potete usare i risultati del fit per stimare la
+# conducibilita‘ vera e propria...
+#l = lambda
+l_rosso = - W / (S * m_hat_rosso * 10**2 ) #ho fatto m per **2 perchè la m era calcolata in metri e la volgio in centimetri
+l_blu  = - W / (S * m_hat_blu * 10**2 )
+sigma_l_rosso = l_rosso * np.sqrt((sigma_W / W)**2 + (sigma_S / S )**2 + (sigma_m_rosso / m_hat_rosso)**2)
+sigma_l_blu = l_blu * np.sqrt((sigma_W / W)**2 + (sigma_S / S )**2 + (sigma_m_blu / m_hat_blu)**2)
+print("Valore tabulato di della conducibilita termica (W/mC): 200")
+print(f"con il termistore 1 abbiamo ottenuto un valore di {l_rosso} +/- {sigma_l_rosso}")
+print(f"con il termistore 2 abbiamo ottenuto un valore di {l_blu} +/- {sigma_l_blu}")
+print(f"m alluminio 1 = {m_hat_rosso} +/- {sigma_m_rosso}")
+print(f"m alluminio 2 = {m_hat_blu} +/- {sigma_m_blu}")
+print("")
+#RAME (c'è il prefisso RA_ nelle variabili)
+print("dati relativi al rame:")
+#le lunghezze sono in m
+RA_diametro = 0.02495
+RA_sigma_diametro = 0.00005
+
+RA_raggio = RA_diametro / 2
+RA_sigma_raggio = RA_sigma_diametro / 2
+#sezione
+RA_S =  np.pi * (RA_raggio)**2
+RA_sigma_S = RA_S * 2 * (RA_sigma_raggio/RA_raggio)
+print(f"sezione: {RA_S} +/- {RA_sigma_S} m")
+
+RA_T_blu = np.array([36.4, 35.7, 35.3, 34.3, 33.6, 33.1, 32.4, 31.7, 31.1, 30.3, 29.6, 29.1, 28.5, 27.7, 27.0, 26.7, 26.0, 25.3, 24.6, 24.0])
+RA_T_rosso = np.array([36.4, 35.8, 35.2, 34.4, 33.6, 33.1, 32.5, 32.0, 31.4, 30.7, 30.0, 29.2, 28.5, 27.8, 27.2, 26.8, 26.2, 25.6, 24.7, 24.3])
+RA_sigma_T_blu = np.full(RA_T_blu.shape, 0.3)
+RA_sigma_T_rosso = np.full(RA_T_rosso.shape, 0.3)
+RA_x = np.linspace(0.0, 34.5, len(RA_T_rosso))
+RA_sigma_x = np.full(RA_x.shape, 0.1)
+def line(x, m, q): #modello fit lineare
+    return m * x + q
+# Fit con una retta
+RA_popt_rosso, RA_pcov_rosso = curve_fit(line, RA_x, RA_T_rosso, sigma=RA_sigma_T_rosso)
+RA_popt_blu, RA_pcov_blu = curve_fit(line, RA_x, RA_T_blu, sigma=RA_sigma_T_blu)
+RA_m_hat_rosso, RA_q_hat_rosso = RA_popt_rosso
+RA_m_hat_blu, RA_q_hat_blu = RA_popt_blu
+RA_sigma_m_rosso, RA_sigma_q_blu= np.sqrt(RA_pcov_rosso.diagonal())
+RA_sigma_m_blu, RA_sigma_q_blu = np.sqrt(RA_pcov_blu.diagonal())
+# Grafico del modello di best fit.
+ax1.errorbar(RA_x, RA_T_rosso, RA_sigma_T_rosso, RA_sigma_x, fmt='o', c="peru", label='rame, termistore 1')
+ax1.errorbar(RA_x, RA_T_blu, RA_sigma_T_blu, RA_sigma_x, fmt='o', c="darkorange", label='rame, termistore 2')
+ax1.legend()
+ax1.plot(z, line(z, RA_m_hat_rosso, RA_q_hat_rosso), c="peru")
+ax1.plot(z, line(z, RA_m_hat_blu, RA_q_hat_blu), c="darkorange")
+RA_res_rosso = RA_T_rosso - line(RA_x, RA_m_hat_rosso, RA_q_hat_rosso)
+RA_res_blu  = RA_T_blu - line(RA_x, RA_m_hat_blu, RA_q_hat_blu)
+ax2.plot(z, np.full(z.shape, 0.0), c="black")
+ax2.errorbar(RA_x, RA_res_rosso, yerr=RA_sigma_T_rosso, fmt='o', c="peru")
+ax2.errorbar(RA_x, RA_res_blu, yerr=RA_sigma_T_blu, fmt='o', c="darkorange")
+
+# A questo punto potete usare i risultati del fit per stimare la
+# conducibilita‘ vera e propria...
+#l = lambda
+RA_l_rosso = - W / (RA_S * RA_m_hat_rosso * 10**2 ) #ho fatto m per **2 perchè la m era calcolata in metri e la volgio in centimetri
+RA_l_blu  = - W / (RA_S * RA_m_hat_blu * 10**2 )
+RA_sigma_l_rosso = RA_l_rosso * np.sqrt((sigma_W / W)**2 + (RA_sigma_S / RA_S )**2 + (RA_sigma_m_rosso / RA_m_hat_rosso)**2)
+RA_sigma_l_blu = RA_l_blu * np.sqrt((sigma_W / W)**2 + (RA_sigma_S / RA_S )**2 + (RA_sigma_m_blu / RA_m_hat_blu)**2)
+print("Valore tabulato di della conducibilita termica (W/mC): 400")
+print(f"con il termistore 1 abbiamo ottenuto un valore di {RA_l_rosso} +/- {RA_sigma_l_rosso}")
+print(f"con il termistore 2 abbiamo ottenuto un valore di {RA_l_blu} +/- {RA_sigma_l_blu}")
+print(f"m rame 1 = {RA_m_hat_rosso} +/- {RA_sigma_m_rosso}")
+print(f"m rame 2 = {RA_m_hat_blu} +/- {RA_sigma_m_blu}")
+print("")
+#rapporto tra i coefficienti angolari delle rette
+print(f"rapporto tra la media dei coefficienti angolari delle rette dell'alluminio e del rame (dovrebbe venire 2):{(m_hat_blu + m_hat_rosso)/(RA_m_hat_blu + RA_m_hat_rosso)}")
+
+plt.show()
